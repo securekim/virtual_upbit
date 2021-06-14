@@ -1,1 +1,1 @@
-"# virtual_upbit" 
+Implementation of upbit systems for the virtual trading
