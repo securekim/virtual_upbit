@@ -56,7 +56,6 @@ let accounts = {"MYACCESS_KEY":sampleAccount}
 
 var server = http.createServer(app);
 server.listen(80); //1024 이하의 포트는 특정 cap 권한이 필요합니다.
-
 //web 폴더 밑에 있는 파일들을 요청이 있을때 접근 가능하도록 합니다.
 app.use(express.static(__dirname + '/web')); 
 app.use(bodyParser.json());
@@ -70,9 +69,11 @@ app.get('/v1/accounts',(req,res)=>{
     let retJSON = verifyJWT(req)
     console.log("[Server] /v1/accounts : "+retJSON.accessKey)
     if(retJSON.result){
-       res.send(accounts[retJSON.accessKey])
+      res.statusCode = 200;
+      res.send(accounts[retJSON.accessKey])
     } else {
-      res.send("Token Verify Failed.")
+      res.statusCode = 401;
+      res.send({error:{"message" : "잘못된 엑세스 키입니다.", "name":"invalid_access_key"}})
     }
 })
 
@@ -81,9 +82,16 @@ app.post('/v1/orders',(req,res)=>{
   console.log("[Server] /v1/accounts : "+retJSON.accessKey)
   if(retJSON.result){
      ret = order(req, retJSON.accessKey)
+     if(ret.result){
+      res.send(ret.message)
+     } else {
+      res.statusCode = 400;   
+      res.send({error:{"message" : ret.message, "name":"virtualUpbitServer"}})
+     }
      res.send(ret)
   } else {
-    res.send("Token Verify Failed.")
+    res.statusCode = 401;
+    res.send({error:{"message" : "잘못된 엑세스 키입니다.", "name":"invalid_access_key"}})
   }
 })
 
@@ -166,18 +174,6 @@ function getPriceAfterSell(market, volume){
   return price;
 }
 
-// function getVolumeAfterSell(market, volume, access_key){
-//   let balance = 0;
-//   for(var i in sampleAccount){
-//     if("KRW-"+sampleAccount[i].currency == market){
-//       balance = sampleAccount[i].balance;
-//       break;
-//     }
-//   }
-//   //근데 화폐의 현재가격을 가져와서 현재가격*volume 만큼하고
-//   //거래 금액의 얼마만큼이 수수료임.
-//   return balance - volume; // 판 만큼 빼자. 0보다 작으면 에러.
-// }
 
 function buy(market, volume, price, balance, access_key){
   //access_key가 market에서 price만큼 사서 volume 만큼 생겼다. 
@@ -337,9 +333,6 @@ function verifyJWT(req){
   return retJSON;
 }
 
-
-
-
 //////////////WEBSOCKET////////////
 
 const WebSocket = require('ws')
@@ -374,7 +367,5 @@ function orderbookWS(markets){
         }
     })
 }
-
-
 
 init()
