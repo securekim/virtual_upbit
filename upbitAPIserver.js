@@ -174,6 +174,32 @@ function getPriceAfterSell(market, volume){
   return price;
 }
 
+function sellOrBuy(market, side, ord_type, price, volume, access_key){
+  if(side == 'bid' && ord_type == "price"){
+    //balance : 내가 사고나면 남는 돈.
+    balance = getBalanceAfterBuy(price, access_key);
+    //사고나면 생기는 볼륨
+    volume = getVolumeAfterBuy(market, price);
+    if(volume <= 0){
+      console.log("["+market+"][BUY]["+access_key+"] 가격 단위 안 맞음 : "+price)
+      return {result:false, message:"Fail : Error price unit : "+price};
+    }
+    return buy(market, volume, price, balance, access_key)
+  } else if(side == 'ask' && ord_type == 'market'){
+    //price : volume 만큼 팔고나면 생기는 KRW
+    price = getPriceAfterSell(market, volume, access_key);
+    if(price <= 0 ){
+      console.log("["+market+"][SELL]["+access_key+"] PRICE ERROR : "+price)
+    }
+    return sell(market, volume, price, access_key)
+    //sell
+    //아직 수수료 계산 안함. 해당 볼륨만큼의 현재 가격을 가져와서 해야됨
+  } else {
+    console.log("["+market+"][?]["+access_key+"] ERROR side: "+side + " ord_type : "+ord_type)
+    //구매도 아니고 판매도 아님
+    return {result:false, message:"Fail : Error side/ord_type"};
+  }
+}
 
 function buy(market, volume, price, balance, access_key){
   //access_key가 market에서 price만큼 사서 volume 만큼 생겼다. 
@@ -227,6 +253,11 @@ function buy(market, volume, price, balance, access_key){
   };
 }
 
+//기존의 가격, 볼륨과 사는 가격, 볼륨의 평균
+function getAvgPrice(avgPrice1, volume1, avgPrice2, volume2 ){
+  return ((avgPrice1*volume1) + (avgPrice2*volume2)) / (volume1 + volume2);
+}
+
 function sell(market, volume, price, access_key){
   let bid_price;
   price = parseFloat(price);
@@ -274,39 +305,6 @@ function sell(market, volume, price, access_key){
   };
 }
 
-//기존의 가격, 볼륨과 사는 가격, 볼륨의 평균
-function getAvgPrice(avgPrice1, volume1, avgPrice2, volume2 ){
-  return ((avgPrice1*volume1) + (avgPrice2*volume2)) / (volume1 + volume2);
-}
-
-function sellOrBuy(market, side, ord_type, price, volume, access_key){
-  if(side == 'bid' && ord_type == "price"){
-    //balance : 내가 사고나면 남는 돈.
-    balance = getBalanceAfterBuy(price, access_key);
-    //사고나면 생기는 볼륨
-    volume = getVolumeAfterBuy(market, price);
-    if(volume <= 0){
-      console.log("["+market+"][BUY]["+access_key+"] 가격 단위 안 맞음 : "+price)
-      return {result:false, message:"Fail : Error price unit : "+price};
-    }
-    return buy(market, volume, price, balance, access_key)
-  } else if(side == 'ask' && ord_type == 'market'){
-    //price : volume 만큼 팔고나면 생기는 KRW
-    price = getPriceAfterSell(market, volume, access_key);
-    if(price <= 0 ){
-      console.log("["+market+"][SELL]["+access_key+"] PRICE ERROR : "+price)
-    }
-    return sell(market, volume, price, access_key)
-    //sell
-    //아직 수수료 계산 안함. 해당 볼륨만큼의 현재 가격을 가져와서 해야됨
-  } else {
-    console.log("["+market+"][?]["+access_key+"] ERROR side: "+side + " ord_type : "+ord_type)
-    //구매도 아니고 판매도 아님
-    return {result:false, message:"Fail : Error side/ord_type"};
-  }
-}
-
-
 //return : {result : true/false, accessKey}
 function verifyJWT(req){
   let accessKey = "";
@@ -336,14 +334,12 @@ function verifyJWT(req){
 //////////////WEBSOCKET////////////
 
 const WebSocket = require('ws')
-
-//지금 체결가가 중요한게 아님. 당장 내가 팔 수 있는 금액이 중요
-// markets : ["KRW-BTC","BTC-XRP"]
 function orderbookWS(markets){
     ticket = uuidv4()
     var ws = new WebSocket('wss://api.upbit.com/websocket/v1');
     ws.on('open', ()=>{
-        ws.send('[{"ticket":"'+ticket+'"},{"type":"orderbook","codes":["'+markets.join('","')+'"]},{"format":"SIMPLE"}]')
+        ws.send('[{"ticket":"'+ticket+'"},{"type":"orderbook","codes":["'
+        +markets.join('","')+'"]},{"format":"SIMPLE"}]')
     })
     ws.on('close', ()=>{
         setTimeout(function() {
@@ -356,7 +352,7 @@ function orderbookWS(markets){
             var json = JSON.parse(str)
             market = json.cd
             market_state = json.market_state
-            _MARKETS_STATUS[market].ask_price = json.obu[0].ap; // ask_price undefined error
+            _MARKETS_STATUS[market].ask_price = json.obu[0].ap; 
             _MARKETS_STATUS[market].ask_volume = json.obu[0].as;
             _MARKETS_STATUS[market].bid_price = json.obu[0].bp;
             _MARKETS_STATUS[market].bid_volume = json.obu[0].bs;

@@ -152,32 +152,19 @@ async function main(){
 ////////////////////TESTED////////////////
     */
     //// ERROR TEST - BUY ////
-    body = await API_buyImmediate("KRW-BTC", 1000000);       // 수수료 에러
-    console.log(body) //체크완료
     body = await getBalance()
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", 500000);
-    console.log(body)
-    body = await API_sellImmediate("KRW-BTC", 1.0);
-    console.log(body)
+    body = await API_buyImmediate("KRW-BTC", 1000000);  // 수수료 에러
+    body = await API_buyImmediate("KRW-BTC", 500000);   // 정상 구매
+    body = await API_sellImmediate("KRW-BTC", 1.0);     // 정상 판매
     body = await API_buyImmediate("KRW-BTC", -1);       // 범위 에러
-    console.log(body)
     body = await API_buyImmediate("KRW-BTC", 1);        // 최소 에러
-    console.log(body)
     body = await API_buyImmediate("KRW-BTC", 1234);     // 단위 에러
-    console.log(body)
     body = await API_buyImmediate("KRW-BTC", "");       // 가격 에러
-    console.log(body)
     body = await API_buyImmediate("KRW-BTC", 100000000);  // 가격 에러
-    console.log(body)
     body = await API_buyImmediate("KRW-ABC", 10000);    // 마켓 에러
-    console.log(body)
     body = await API_buyImmediate("", 10000);           // 마켓 에러
-    console.log(body)
     body = await API_buyImmediate("KRW-ABC-BTC", 10000);// 마켓 에러
-    console.log(body)
     body = await API_sellImmediate("KRW-BTC", 100);      // 개수 에러
-    console.log(body)
     /*
     // ERROR TEST - SELL ////
     */
