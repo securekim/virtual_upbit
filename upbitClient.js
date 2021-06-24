@@ -4,8 +4,8 @@ const sign = require('jsonwebtoken').sign
 const crypto = require('crypto')
 const queryEncode = require("querystring").encode
 
-const access_key = "MYACCESS_KEY"
-const secret_key = "MYSECRET_KEY"
+const access_key = "TEST_ACCESSKEY1"
+const secret_key = "5PsKOnR6EEr1jH6kLh45KXdHAWI8EfaKGrrU0NuOZdU="
 const server_url = "http://127.0.0.1"
 
 async function getBalance(){

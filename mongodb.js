@@ -3,7 +3,43 @@ const dbconfig = require('./config/database.json')
 const db = mongoose.connection
 const crypto = require('crypto')
 let _ALL_ACCOUNTS;  //_ALL_ACCOUNTS[0]._doc.accounts[0]._doc.currency
-let _ALL_USERS;     //_ALL_USERS[0]._doc.accessKey
+let _ALL_USERSAUTH;     //_ALL_USERSAUTH[0]._doc.accessKey
+
+function getSavedAccounts(){
+    /*
+    ACCESSKEY : {
+        _id : 'ACCESSKEY',
+        accessKey : 'ACCESSKEY',
+        accounts : []
+    },
+    ACCESSKEY2 : {
+    } ...
+    */
+    retJSON = {};
+    for(var i in _ALL_ACCOUNTS){
+        let accessKey = _ALL_ACCOUNTS[i]._doc.accessKey
+        let accounts = _ALL_ACCOUNTS[i]._doc.accounts
+        retJSON[accessKey] = {
+            _id : accessKey,
+            accessKey : accessKey,
+            accounts : accounts
+        }
+    }
+    return retJSON
+}
+
+function getSavedUserAuth(){
+    let retJSON = {}
+    /*
+        {"accessKey" : "secretKey", ...}
+    */
+    for(var i in _ALL_USERSAUTH){
+        accessKey = _ALL_USERSAUTH[i]._doc.accessKey;
+        secretKey = _ALL_USERSAUTH[i]._doc.secretKey;
+        retJSON[accessKey] = secretKey
+    }
+    return retJSON
+}
 
 async function mongooseConnect(){
 return new Promise((resolve, reject)=>{
@@ -92,6 +128,7 @@ async function saveErrorLog(accessKey, detail){
     ret = await instance.save()
     return ret;
 }
+
 
 async function saveOrderLog(accessKey, message){
     try{
@@ -182,7 +219,7 @@ async function loadAllAccountAndAuth(){
     ret = await userAccountModel.find();
     _ALL_ACCOUNTS = ret;
     ret = await userAuthModel.find();
-    _ALL_USERS = ret
+    _ALL_USERSAUTH = ret
 }
 
 async function makeAccountAndAuth(accessKey, balance){
@@ -214,10 +251,13 @@ async function getAccount(accessKey){
 async function init(){
     let ret = await mongooseConnect();
     await loadAllAccountAndAuth()
-
-    testAccessKey = "TEST_ACCESSKEY1"
+}
+//init()
+async function initCreate(){
+    init()
+    testAccessKey = "TEST_ACCESSKEY3"
     try{
-        let balance = 100000
+        let balance = 1000000
         ret = await makeAccountAndAuth(testAccessKey, balance)
         console.log(ret)
     }catch(E){
@@ -225,24 +265,18 @@ async function init(){
     }
     ret = await getAccount(testAccessKey)
     console.log(ret)
-    //
-    tmpaccounts = [{
-        currency:"ETH",
-        balance:"2",
-        avg_buy_price:"0",
-        unit_currency:"KRW",
-        timestamp:new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
-    }]
-    //market, market_balance, avg_buy_price, KRW_balance
-    ret = await saveAccount(testAccessKey,tmpaccounts)
-    console.log(ret)
+    //ret = await saveAccount(testAccessKey,tmpaccounts)
 }
-init()
+//initCreate();
 
 module.exports = {
     init,
     getAccount,
     saveAccount,
     saveErrorLog,
-    saveOrderLog
+    saveOrderLog,
+    _ALL_ACCOUNTS,
+    _ALL_USERSAUTH,
+    getSavedAccounts,
+    getSavedUserAuth
 }

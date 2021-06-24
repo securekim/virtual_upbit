@@ -5,6 +5,7 @@ app         = express();
 bodyParser  = require ("body-parser")
 const jwt = require('jsonwebtoken')
 const config = require('./config/config.json')
+const database = require('./mongodb.js')
 const { v4: uuidv4 } = require('uuid');
 
 const BIDFEE = config.bidFee;
@@ -12,8 +13,25 @@ const ASKFEE = config.askFee;
 const MARKETS = config.markets;
 
 let _MARKETS_STATUS = {};
+let _LOCAL_ALL_ACCOUNTS;
+let _LOCAL_ALL_USERSAUTH;
+let _CHANGED_ACCESSKEY = {}
 
-function init(){
+
+setInterval(async ()=>{
+    for(var _access_key in _CHANGED_ACCESSKEY){
+      if(_CHANGED_ACCESSKEY[_access_key]){
+        try{
+          await database.saveAccount(_access_key, _LOCAL_ALL_ACCOUNTS[_access_key].accounts)
+          _CHANGED_ACCESSKEY[_access_key] = false
+        } catch(E){
+          console.log(E)
+        }
+      }
+    }
+},10000)
+
+async function init(){
    for(var i in MARKETS){
     _MARKETS_STATUS[MARKETS[i]] = {
       "ask_price" : ""
@@ -25,34 +43,50 @@ function init(){
       ,"ask_power": ""
     }
    }
+   await database.init();
+   _LOCAL_ALL_ACCOUNTS = database.getSavedAccounts();
+   /*
+{
+  TEST_ACCESSKEY3: {
+    _id: "TEST_ACCESSKEY3",
+    accessKey: "TEST_ACCESSKEY3",
+    accounts: [
+      {
+        currency: "ETH",
+        balance: "2",
+        avg_buy_price: "0",
+        unit_currency: "KRW",
+        timestamp: "6/25/2021, 3:26:39 AM",
+      },
+    ],
+  },
+  TEST_ACCESSKEY1: {
+    _id: "TEST_ACCESSKEY1",
+    accessKey: "TEST_ACCESSKEY1",
+    accounts: [
+      {
+        currency: "ETH",
+        balance: "2",
+        avg_buy_price: "0",
+        unit_currency: "KRW",
+        timestamp: "6/25/2021, 3:29:57 AM",
+      },
+    ],
+  },
+}
+   */
+   _LOCAL_ALL_USERSAUTH = database.getSavedUserAuth();
+   /*
+{
+  TEST_ACCESSKEY3: "fGT0g89y6xclPkQNYALqg8ucra+SmT+oaW+EwxWjPXvUcChIXLqDBU0PcdR0ygXKRyWTm3eI4cOUoxtLNcYBIw==",
+  TEST_ACCESSKEY1: "5PsKOnR6EEr1jH6kLh45KXdHAWI8EfaKGrrU0NuOZdU=",
+}
+   */
+   for(var _access_key in _LOCAL_ALL_USERSAUTH){
+    _CHANGED_ACCESSKEY[_access_key] = false
+   }
    orderbookWS(MARKETS)
 }
-
-let KEYS = {
-  "MYACCESS_KEY_TMP" : "MYSECRET_KEY_TMP"
-  ,"MYACCESS_KEY" : "MYSECRET_KEY"
-}
-
-let sampleAccount = [
-  {
-    "currency":"KRW",
-    "balance":"1000000.0",
-    "locked":"0.0",
-    "avg_buy_price":"0",
-    "avg_buy_price_modified":false,
-    "unit_currency": "KRW",
-  },
-  {
-    "currency":"BTC",
-    "balance":"2.0",
-    "locked":"0.0",
-    "avg_buy_price":"101000",
-    "avg_buy_price_modified":false,
-    "unit_currency": "KRW",
-  }
-]
-
-let accounts = {"MYACCESS_KEY":sampleAccount}
 
 var server = http.createServer(app);
 server.listen(80); //1024 이하의 포트는 특정 cap 권한이 필요합니다.
@@ -67,13 +101,16 @@ app.use(bodyParser.json());
 ////"{\"error\":{\"message\":\"잘못된 엑세스 키입니다.\",\"name\":\"invalid_access_key\"}}"
 app.get('/v1/accounts',(req,res)=>{
     let retJSON = verifyJWT(req)
-    console.log("[Server] /v1/accounts : "+retJSON.accessKey)
+    let access_key = retJSON.accessKey
+    console.log("[Server] /v1/accounts : "+access_key)
     if(retJSON.result){
       res.statusCode = 200;
-      res.send(accounts[retJSON.accessKey])
+      res.send(_LOCAL_ALL_ACCOUNTS[access_key].accounts)
     } else {
       res.statusCode = 401;
-      res.send({error:{"message" : "잘못된 엑세스 키입니다.", "name":"invalid_access_key"}})
+      message = "잘못된 엑세스 키입니다."
+      database.saveErrorLog(access_key, message)
+      res.send({error:{"message" : message, "name":"invalid_access_key"}})
     }
 })
 
@@ -88,14 +125,15 @@ app.post('/v1/orders',(req,res)=>{
       res.statusCode = 400;   
       res.send({error:{"message" : ret.message, "name":"virtualUpbitServer"}})
      }
-     res.send(ret)
   } else {
     res.statusCode = 401;
-    res.send({error:{"message" : "잘못된 엑세스 키입니다.", "name":"invalid_access_key"}})
+    message = "잘못된 엑세스 키입니다."
+    database.saveErrorLog(access_key, message)
+    res.send({error:{"message" : message, "name":"invalid_access_key"}})
   }
 })
 
-function order(req, accessKey){
+function order(req, access_Key){
   try{
     let market = req.body.market
     let ord_type = req.body.ord_type
@@ -104,7 +142,7 @@ function order(req, accessKey){
     let volume = parseFloat(req.body.volume)
     if(!marketValidation(market)) return {result:false, message:"Fail : marketValidation : "+market};
     if(!valueCheck([price, volume])) return {result:false, message:"Fail : price/volume Value Check"};
-    return sellOrBuy(market, side, ord_type, price, volume, accessKey);
+    return sellOrBuy(market, side, ord_type, price, volume, access_Key);
   } catch(E){
     console.log(E);
     return {result:false, message:"Fail : Internal Server Error"};
@@ -143,9 +181,10 @@ function getTradeUnitKRW(price){
 function getBalanceAfterBuy(price, access_key){
   //구매 후 밸런스(남은 돈) 계산.
   let balance = 0;
-  for(var i in sampleAccount){
-    if(sampleAccount[i].currency == "KRW"){
-      balance = sampleAccount[i].balance;
+  let accounts = _LOCAL_ALL_ACCOUNTS[access_key].accounts
+  for(var i in accounts){
+    if(accounts[i].currency == "KRW"){
+      balance = accounts[i].balance;
       break;
     }
   }
@@ -215,15 +254,17 @@ function buy(market, volume, price, balance, access_key){
     }
     //돈 충분, 이제 구매하자
     //마켓의 Volume은 증가하고, KRW의 돈은 감소한다.
-    for(var i in sampleAccount){
-      if("KRW-"+sampleAccount[i].currency == market){ // 해당 마켓 찾음. 구매해서 볼륨 생김.
+
+    let accounts = _LOCAL_ALL_ACCOUNTS[access_key].accounts
+    for(var i in accounts){
+      if("KRW-"+accounts[i].currency == market){ // 해당 마켓 찾음. 구매해서 볼륨 생김.
         //기존의 가격, 볼륨과 사는 가격, 볼륨의 평균
-        sampleAccount[i].avg_buy_price = getAvgPrice(parseFloat(sampleAccount[i].avg_buy_price), parseFloat(sampleAccount[i].balance), ask_price, volume)
+        accounts[i].avg_buy_price = getAvgPrice(parseFloat(accounts[i].avg_buy_price), parseFloat(accounts[i].balance), ask_price, volume)
         //샀으니까 볼륨 수정
-        sampleAccount[i].balance = parseFloat(sampleAccount[i].balance) + volume;
+        accounts[i].balance = parseFloat(accounts[i].balance) + volume;
       }
-      if(sampleAccount[i].currency == "KRW"){
-        sampleAccount[i].balance = parseFloat(sampleAccount[i].balance) - price - fee // price 만큼 샀으니 KRW 없애고, 수수료도 빼줌.
+      if(accounts[i].currency == "KRW"){
+        accounts[i].balance = parseFloat(accounts[i].balance) - price - fee // price 만큼 샀으니 KRW 없애고, 수수료도 빼줌.
       }
     }
   }catch(E){
@@ -231,26 +272,27 @@ function buy(market, volume, price, balance, access_key){
     console.log(E)
     return {result:false, message:"Fail : Internal Server Error : BUY"};
   }
-  return {result:true, message:
-    {
-      uuid : uuidv4(),
-      side : "bid",
-      ord_type : "price", //시장가 매수
-      price : ask_price, //주문당시 화폐가격
-      avg_price : ask_price, //체결 가격의 평균가격
-      state : "done", //주문 상태
-      market : market,
-      created_at : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"}),
-      volume : volume, //매수해서 얼마나 생겼냐(사용자가 입력한 것)
-      remaining_volume : "0.0", //무조건 다 사짐
-      reserved_fee : "0.0", //수수료 다 써짐
-      remaining_fee : "0.0",
-      paid_fee : fee.toString(),
-      locked : "0.0",
-      executed_volume : volume, //매수해서 얼마나 생겼냐(실제 집행된 것)
-      trades_count : 1 // 한번에 무조건 다 사진다
-    }
-  };
+  message = {
+    uuid : uuidv4(),
+    side : "bid",
+    ord_type : "price", //시장가 매수
+    price : ask_price, //주문당시 화폐가격
+    avg_price : ask_price, //체결 가격의 평균가격
+    state : "done", //주문 상태
+    market : market,
+    created_at : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"}),
+    volume : volume, //매수해서 얼마나 생겼냐(사용자가 입력한 것)
+    remaining_volume : "0.0", //무조건 다 사짐
+    reserved_fee : "0.0", //수수료 다 써짐
+    remaining_fee : "0.0",
+    paid_fee : fee.toString(),
+    locked : "0.0",
+    executed_volume : volume, //매수해서 얼마나 생겼냐(실제 집행된 것)
+    trades_count : 1 // 한번에 무조건 다 사진다
+  }
+  _CHANGED_ACCESSKEY[access_key] = true; // 변경사항 존재
+  database.saveOrderLog(access_key, message);
+  return {result:true, message:message}
 }
 
 //기존의 가격, 볼륨과 사는 가격, 볼륨의 평균
@@ -266,43 +308,46 @@ function sell(market, volume, price, access_key){
     bid_price = price / volume // 마켓의 개당 판매 가격
     fee = price*ASKFEE;
     //판매하자. 마켓의 Volume은 감소하고, KRW돈은 증가한다.
-    for(var i in sampleAccount){
-      if("KRW-"+sampleAccount[i].currency == market){ // 해당 마켓 찾음. 판매해서 볼륨 사라짐.
+    let accounts = _LOCAL_ALL_ACCOUNTS[access_key].accounts
+    for(var i in accounts ){
+      if("KRW-"+accounts[i].currency == market){ // 해당 마켓 찾음. 판매해서 볼륨 사라짐.
         //평균 가격은 변하지 않는다.
         //팔았으니까 볼륨 감소
-        let balance = parseFloat(sampleAccount[i].balance) - volume;
+        let balance = parseFloat(accounts[i].balance) - volume;
         if(balance < 0) return {result:false, message:"Fail : Not Enough Volume : SELL"};
-        sampleAccount[i].balance = balance;
+        accounts[i].balance = balance;
       }
-      if(sampleAccount[i].currency == "KRW"){
-        sampleAccount[i].balance = parseFloat(sampleAccount[i].balance) + price - fee // price 만큼 팔았으니 KRW 더해주고, 수수료는 빼줌.
+      if(accounts[i].currency == "KRW"){
+        accounts[i].balance = parseFloat(accounts[i].balance) + price - fee // price 만큼 팔았으니 KRW 더해주고, 수수료는 빼줌.
       }
     }
     }catch(E){
       console.log("ERROR : "+access_key);
       console.log(E)
       return {result:false, message:"Fail : Internal Server Error : SELL"};
-  }
-  return {result:true, message:
-    {
-      uuid : uuidv4(),
-      side : "ask",
-      ord_type : "market", //시장가 매도
-      price : bid_price, //주문당시 화폐가격
-      avg_price : bid_price, //체결 가격의 평균가격
-      state : "done", //주문 상태
-      market : market,
-      created_at : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"}),
-      volume : volume, //매도해서 얼마나 생겼냐(사용자가 입력한 것)
-      remaining_volume : "0.0", //무조건 다 팔림
-      reserved_fee : "0.0", //수수료 다 써짐
-      remaining_fee : "0.0",
-      paid_fee : fee.toString(), //사용된 수수료
-      locked : "0.0",
-      executed_volume : volume, //매도해서 얼마나 생겼냐(실제 집행된 것)
-      trades_count : 1 // 한번에 무조건 다 사진다
     }
-  };
+  message = {
+    uuid : uuidv4(),
+    side : "ask",
+    ord_type : "market", //시장가 매도
+    price : bid_price, //주문당시 화폐가격
+    avg_price : bid_price, //체결 가격의 평균가격
+    state : "done", //주문 상태
+    market : market,
+    created_at : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"}),
+    volume : volume, //매도해서 얼마나 생겼냐(사용자가 입력한 것)
+    remaining_volume : "0.0", //무조건 다 팔림
+    reserved_fee : "0.0", //수수료 다 써짐
+    remaining_fee : "0.0",
+    paid_fee : fee.toString(), //사용된 수수료
+    locked : "0.0",
+    executed_volume : volume, //매도해서 얼마나 생겼냐(실제 집행된 것)
+    trades_count : 1 // 한번에 무조건 다 사진다
+  }
+
+  _CHANGED_ACCESSKEY[access_key] = true; // 변경사항 존재
+  database.saveOrderLog(access_key, message);
+  return {result:true, message:message}
 }
 
 //return : {result : true/false, accessKey}
@@ -314,7 +359,7 @@ function verifyJWT(req){
     info = token.split(".")[1]
     body = Buffer.from(info, "base64").toString('utf8')
     jsonBody = JSON.parse(body)
-    secretKey = KEYS[jsonBody.access_key]
+    secretKey = _LOCAL_ALL_USERSAUTH[jsonBody.access_key] // TODO
     jwt.verify(token, secretKey, (err, verifiedJwt) => {
         if(err){
           retJSON.result = false;
