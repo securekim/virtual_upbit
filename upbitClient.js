@@ -4,8 +4,8 @@ const sign = require('jsonwebtoken').sign
 const crypto = require('crypto')
 const queryEncode = require("querystring").encode
 
-const access_key = "TEST_ACCESSKEY1"
-const secret_key = "5PsKOnR6EEr1jH6kLh45KXdHAWI8EfaKGrrU0NuOZdU="
+const access_key = "TEST_ACCESSKEY"
+const secret_key = "UrNdNutMTG7Y9twM1BDUuMZAD7DL6K97AUzeuLZAuGI="
 const server_url = "http://127.0.0.1"
 
 async function getBalance(){
@@ -96,78 +96,30 @@ async function API_sellImmediate(market, volume){
     });
 }
 
-
-
 async function main(){
-
-    // var access_key = "QNNtkaroxY3ASQrhxXXaAxuqJxFYtko61Y1xBPlW"
-    // var secret_key = "NW7dHskx9JQsHx4dOQM7i2RGuhG3qdmWBPkLnpxY"
-    // var server_url = "https://api.upbit.com"
-    // body = await getBalance(access_key, secret_key, server_url)
-    // console.log(body)
-    /*
-    [
-        {"currency":"KRW","balance":"몇개","locked":"11005499.93629343","avg_buy_price":"0","avg_buy_price_modified":true,"unit_currency":"KRW"},
-    ]
-    [
-        {"currency":"KRW","balance":"15232854.60024727","locked":"11005499.93629343","avg_buy_price":"0","avg_buy_price_modified":true,"unit_currency":"KRW"},
-        {"currency":"BTC","balance":"0.10344202","locked":"0.0","avg_buy_price":"48336245.83","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"SNT","balance":"0.0","locked":"8227.02651414","avg_buy_price":"121.55","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"ETH","balance":"1.3548063","locked":"0.0","avg_buy_price":"2952451.56","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"ATOM","balance":"178.10340886","locked":"0.0","avg_buy_price":"16844.15","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"BTT","balance":"0.0","locked":"914999.36839014","avg_buy_price":"5.56","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"GAS","balance":"0.07329744","locked":"0.0","avg_buy_price":"14408.68","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"WIN","balance":"730.56498603","locked":"0.0","avg_buy_price":"0","avg_buy_price_modified":false,"unit_currency":"KRW"},
-        {"currency":"META","balance":"0.0","locked":"25021.75517441","avg_buy_price":"116.29","avg_buy_price_modified":false,"unit_currency":"KRW"}
-    ]
-    */
-   /*
-    body = await API_buyImmediate("KRW-BTC", 1000000);       // 수수료 에러
-    console.log(body) //체크완료
-    body = await getBalance()
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", 500000);
-    console.log(body)
-    body = await API_sellImmediate("KRW-BTC", 1.0);
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", -1);       // 범위 에러
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", 1);        // 최소 에러
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", 1234);     // 단위 에러
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", "");       // 가격 에러
-    console.log(body)
-    body = await API_buyImmediate("KRW-BTC", 100000000);  // 가격 에러
-    console.log(body)
-    body = await API_buyImmediate("KRW-ABC", 10000);    // 마켓 에러
-    console.log(body)
-    body = await API_buyImmediate("", 10000);           // 마켓 에러
-    console.log(body)
-    body = await API_buyImmediate("KRW-ABC-BTC", 10000);// 마켓 에러
-    console.log(body)
-    body = await API_sellImmediate("KRW-BTC", 100);      // 개수 에러
-    console.log(body)
-
-////////////////////TESTED////////////////
-    */
     //// ERROR TEST - BUY ////
-    body = await getBalance()
-    body = await API_buyImmediate("KRW-BTC", 1000000);  // 수수료 에러
-    body = await API_buyImmediate("KRW-BTC", 500000);   // 정상 구매
-    body = await API_sellImmediate("KRW-BTC", 1.0);     // 정상 판매
-    body = await API_buyImmediate("KRW-BTC", -1);       // 범위 에러
-    body = await API_buyImmediate("KRW-BTC", 1);        // 최소 에러
-    body = await API_buyImmediate("KRW-BTC", 1234);     // 단위 에러
-    body = await API_buyImmediate("KRW-BTC", "");       // 가격 에러
-    body = await API_buyImmediate("KRW-BTC", 100000000);  // 가격 에러
-    body = await API_buyImmediate("KRW-ABC", 10000);    // 마켓 에러
-    body = await API_buyImmediate("", 10000);           // 마켓 에러
-    body = await API_buyImmediate("KRW-ABC-BTC", 10000);// 마켓 에러
-    body = await API_sellImmediate("KRW-BTC", 100);      // 개수 에러
-    /*
-    // ERROR TEST - SELL ////
-    */
+    //body = await getBalance()
+    //body = await API_buyImmediate("KRW-ETH", 2000000);   // 정상 구매 
+    //
+    //36609686
+    //36604449
+    //1.0138627037817458
+    //1.014008084593923
+    //348583.84272261686
+    //353695.55995306565
+    body = await API_sellImmediate("KRW", 5.04);      // 개수 에러
+    console.log(body);
+    // body = await API_buyImmediate("KRW-BTC", 500000);   // 정상 구매
+    // body = await API_sellImmediate("KRW-BTC", 1.0);     // 정상 판매
+    // body = await API_buyImmediate("KRW-BTC", -1);       // 범위 에러
+    // body = await API_buyImmediate("KRW-BTC", 1);        // 최소 에러
+    // body = await API_buyImmediate("KRW-BTC", 5234);     // 단위 에러..안남
+    // body = await API_buyImmediate("KRW-BTC", "");       // 가격 에러
+    // body = await API_buyImmediate("KRW-BTC", 100000000);  // 가격 에러
+    // body = await API_buyImmediate("KRW-ABC", 10000);    // 마켓 에러
+    // body = await API_buyImmediate("", 10000);           // 마켓 에러
+    // body = await API_buyImmediate("KRW-ABC-BTC", 10000);// 마켓 에러
+    // body = await API_sellImmediate("KRW-BTC", 100);      // 개수 에러
 }
 
 

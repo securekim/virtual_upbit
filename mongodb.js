@@ -110,7 +110,6 @@ const orderSchema = new mongoose.Schema(orderStructure);
 const userAccountSchema = new mongoose.Schema(userAccountStructure);
 const logSchema =  new mongoose.Schema({
     timestamp : String,
-    level : String,
     detail : mongoose.Schema.Types.Mixed,
     accessKey : String
 })
@@ -118,11 +117,12 @@ const logSchema =  new mongoose.Schema({
 const userAuthModel = mongoose.model('userAuthModel', userAuthSchema);
 const orderModel = mongoose.model('orderModel', orderSchema);
 const userAccountModel = mongoose.model('userAccountModel', userAccountSchema);
+const logModel = mongoose.model('logModel', logSchema)
 
-async function saveErrorLog(accessKey, detail){
-    var instance = new logSchema({
+async function saveErrorLog(accessKey, message){
+    var instance = new logModel({
         timestamp : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"}),
-        detail : detail,
+        detail : message,
         accessKey : accessKey
     });
     ret = await instance.save()
@@ -255,7 +255,7 @@ async function init(){
 //init()
 async function initCreate(){
     init()
-    testAccessKey = "TEST_ACCESSKEY3"
+    testAccessKey = "TEST_ACCESSKEY"
     try{
         let balance = 1000000
         ret = await makeAccountAndAuth(testAccessKey, balance)
@@ -267,7 +267,7 @@ async function initCreate(){
     console.log(ret)
     //ret = await saveAccount(testAccessKey,tmpaccounts)
 }
-//initCreate();
+initCreate();
 
 module.exports = {
     init,

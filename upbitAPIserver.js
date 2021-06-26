@@ -11,6 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const BIDFEE = config.bidFee;
 const ASKFEE = config.askFee;
 const MARKETS = config.markets;
+const MINPRICE = config.minPrice;
 
 let _MARKETS_STATUS = {};
 let _LOCAL_ALL_ACCOUNTS;
@@ -101,36 +102,50 @@ app.use(bodyParser.json());
 ////"{\"error\":{\"message\":\"잘못된 엑세스 키입니다.\",\"name\":\"invalid_access_key\"}}"
 app.get('/v1/accounts',(req,res)=>{
     let retJSON = verifyJWT(req)
-    let access_key = retJSON.accessKey
-    console.log("[Server] /v1/accounts : "+access_key)
+    let accessKey = retJSON.accessKey
+    if(typeof accessKey == "undefined") {
+      res.statusCode = 400;   
+      res.send({error:{"message" : ret.message, "name":"Access Key가 없어요."}})
+      return;
+    }
+    console.log("[Server] /v1/accounts : "+accessKey)
     if(retJSON.result){
       res.statusCode = 200;
-      res.send(_LOCAL_ALL_ACCOUNTS[access_key].accounts)
+      res.send(_LOCAL_ALL_ACCOUNTS[accessKey].accounts)
     } else {
       res.statusCode = 401;
       message = "잘못된 엑세스 키입니다."
-      database.saveErrorLog(access_key, message)
+      database.saveErrorLog(accessKey, message)
       res.send({error:{"message" : message, "name":"invalid_access_key"}})
     }
 })
 
 app.post('/v1/orders',(req,res)=>{
   let retJSON = verifyJWT(req)
-  console.log("[Server] /v1/accounts : "+retJSON.accessKey)
-  if(retJSON.result){
-     ret = order(req, retJSON.accessKey)
-     if(ret.result){
-      res.send(ret.message)
-     } else {
-      res.statusCode = 400;   
-      res.send({error:{"message" : ret.message, "name":"virtualUpbitServer"}})
-     }
-  } else {
-    res.statusCode = 401;
-    message = "잘못된 엑세스 키입니다."
-    database.saveErrorLog(access_key, message)
-    res.send({error:{"message" : message, "name":"invalid_access_key"}})
+  let accessKey = retJSON.accessKey
+  if(typeof accessKey == "undefined") {
+    res.statusCode = 400;   
+    res.send({error:{"message" : ret.message, "name":"Access Key가 없어요."}})
+    return;
   }
+    console.log("[Server] /v1/accounts : "+accessKey)
+    if(retJSON.result){
+       ret = order(req, accessKey)
+       if(ret.result){
+        res.send(ret.message)
+       } else {
+        res.statusCode = 400;   
+        database.saveErrorLog(accessKey, ret.message)
+        res.send({error:{"message" : ret.message, "name":"virtualUpbitServer"}})
+       }
+    } else {
+      res.statusCode = 401;
+      message = "잘못된 엑세스 키입니다."
+      database.saveErrorLog(accessKey, message)
+      res.send({error:{"message" : message, "name":"invalid_access_key"}})
+    }
+  
+  
 })
 
 function order(req, access_Key){
@@ -151,9 +166,9 @@ function order(req, access_Key){
 
 function valueCheck(arr){
   for(var i in arr){
-    if(arr[i]<=0) return false
+    if(arr[i]>0) return true
   }
-  return true;
+  return false;
 }
 
 function marketValidation(market){
@@ -195,10 +210,12 @@ function getVolumeAfterBuy(market, price){
   //price 만큼 사고나면 얼마의 volume을 얻게 되는지.
   //살 수 있는 가격은 판매되고 있는 가격이다.
   ask_price = _MARKETS_STATUS[market].ask_price; // 1볼륨당 가격.
-  tradeUnit = getTradeUnitKRW(ask_price); 
-  if(price % tradeUnit !=0){
-    return 0 //가격 단위 안 맞음.
-  } 
+  
+  //필요없는 이유 : 시장가 구매하고 시장가 판매하기 때문에 얼마에 걸어놓는게 없음.
+  // tradeUnit = getTradeUnitKRW(ask_price); 
+  // if(price % tradeUnit !=0){
+  //   return 0 //가격 단위 안 맞음.
+  // } 
   volume =  parseFloat(price) / parseFloat(ask_price)
   return volume;
 }
@@ -215,6 +232,9 @@ function getPriceAfterSell(market, volume){
 
 function sellOrBuy(market, side, ord_type, price, volume, access_key){
   if(side == 'bid' && ord_type == "price"){
+    if(price < MINPRICE){
+      return {result:false, message:"Fail : Error minimum price : "+price};
+    }
     //balance : 내가 사고나면 남는 돈.
     balance = getBalanceAfterBuy(price, access_key);
     //사고나면 생기는 볼륨
@@ -227,8 +247,9 @@ function sellOrBuy(market, side, ord_type, price, volume, access_key){
   } else if(side == 'ask' && ord_type == 'market'){
     //price : volume 만큼 팔고나면 생기는 KRW
     price = getPriceAfterSell(market, volume, access_key);
-    if(price <= 0 ){
+    if(price <= 0 || price < MINPRICE){
       console.log("["+market+"][SELL]["+access_key+"] PRICE ERROR : "+price)
+      return {result:false, message:"Fail : Error minimum price : "+price};
     }
     return sell(market, volume, price, access_key)
     //sell
@@ -243,6 +264,7 @@ function sellOrBuy(market, side, ord_type, price, volume, access_key){
 function buy(market, volume, price, balance, access_key){
   //access_key가 market에서 price만큼 사서 volume 만큼 생겼다. 
   //수수료 계산 필요. 만약 수수료 포함해서 계정에 돈이 모자라면 안산다.
+  timestamp = new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
   volume = parseFloat(volume);
   price = parseFloat(price);
   let ask_price = parseFloat(_MARKETS_STATUS[market].ask_price) // 가격 고정 (변동 가능)
@@ -254,18 +276,29 @@ function buy(market, volume, price, balance, access_key){
     }
     //돈 충분, 이제 구매하자
     //마켓의 Volume은 증가하고, KRW의 돈은 감소한다.
-
     let accounts = _LOCAL_ALL_ACCOUNTS[access_key].accounts
+    let newMarketFlag = true;
     for(var i in accounts){
+      if(accounts[i].currency == "KRW"){
+        accounts[i].balance = parseFloat(accounts[i].balance) - price - fee // price 만큼 샀으니 KRW 없애고, 수수료도 빼줌.
+        accounts[i].timestamp = timestamp
+      }
       if("KRW-"+accounts[i].currency == market){ // 해당 마켓 찾음. 구매해서 볼륨 생김.
         //기존의 가격, 볼륨과 사는 가격, 볼륨의 평균
+        newMarketFlag = false;
         accounts[i].avg_buy_price = getAvgPrice(parseFloat(accounts[i].avg_buy_price), parseFloat(accounts[i].balance), ask_price, volume)
         //샀으니까 볼륨 수정
         accounts[i].balance = parseFloat(accounts[i].balance) + volume;
+        accounts[i].timestamp = timestamp
       }
-      if(accounts[i].currency == "KRW"){
-        accounts[i].balance = parseFloat(accounts[i].balance) - price - fee // price 만큼 샀으니 KRW 없애고, 수수료도 빼줌.
-      }
+    }
+    if(newMarketFlag){ //갖고 있지 않은, 새로운 마켓이다.
+      accounts.push({
+        currency : market.split("-")[1],
+        balance : volume,
+        timestamp : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"}),
+        avg_buy_price : ask_price,
+      })
     }
   }catch(E){
     console.log("ERROR : "+access_key);
@@ -304,22 +337,41 @@ function sell(market, volume, price, access_key){
   let bid_price;
   price = parseFloat(price);
   volume = parseFloat(volume);
+  timestamp = new Date().toLocaleString('en', {timeZone: "Asia/Seoul"});
   try{
     bid_price = price / volume // 마켓의 개당 판매 가격
     fee = price*ASKFEE;
     //판매하자. 마켓의 Volume은 감소하고, KRW돈은 증가한다.
     let accounts = _LOCAL_ALL_ACCOUNTS[access_key].accounts
-    for(var i in accounts ){
-      if("KRW-"+accounts[i].currency == market){ // 해당 마켓 찾음. 판매해서 볼륨 사라짐.
+    let newMarketFlag = true;
+    let sellFlag = false;
+    for(var i in accounts){
+      if(accounts[i].currency == "KRW"){
+        sellFlag = true;
+        accounts[i].balance = parseFloat(accounts[i].balance) + price - fee // price 만큼 팔았으니 KRW 더해주고, 수수료는 빼줌.
+        accounts[i].timestamp = timestamp
+      } else if("KRW-"+accounts[i].currency == market){ // 해당 마켓 찾음. 판매해서 볼륨 사라짐.
         //평균 가격은 변하지 않는다.
         //팔았으니까 볼륨 감소
+        newMarketFlag = false;
         let balance = parseFloat(accounts[i].balance) - volume;
-        if(balance < 0) return {result:false, message:"Fail : Not Enough Volume : SELL"};
+        if(balance < 0){
+          if(sellFlag){
+            // 해당 마켓에 갖고 있는게 없는데 계산을 해버렸다. back
+            accounts[0].balance = parseFloat(accounts[0].balance) - price + fee
+            return {result:false, message:"Fail : Not Enough Volume : SELL"};
+          }
+          //실제 팔지는 않았다.
+          return {result:false, message:"Fail : Not Enough Volume : SELL"};
+        } 
+        accounts[i].timestamp = timestamp
         accounts[i].balance = balance;
       }
-      if(accounts[i].currency == "KRW"){
-        accounts[i].balance = parseFloat(accounts[i].balance) + price - fee // price 만큼 팔았으니 KRW 더해주고, 수수료는 빼줌.
-      }
+    }
+    if(newMarketFlag && sellFlag){
+      // 해당 마켓에 갖고 있는게 없는데 계산을 해버렸다. back
+      accounts[0].balance = parseFloat(accounts[0].balance) - price + fee
+      return {result:false, message:"Fail : Not Enough Volume : SELL"};
     }
     }catch(E){
       console.log("ERROR : "+access_key);
