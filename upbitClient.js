@@ -107,7 +107,7 @@ async function main(){
     //1.014008084593923
     //348583.84272261686
     //353695.55995306565
-    body = await API_sellImmediate("KRW", 5.04);      // 개수 에러
+    body = await API_buyImmediate("KRW-ETH", 10000000);   // 정상 구매
     console.log(body);
     // body = await API_buyImmediate("KRW-BTC", 500000);   // 정상 구매
     // body = await API_sellImmediate("KRW-BTC", 1.0);     // 정상 판매

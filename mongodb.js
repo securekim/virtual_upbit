@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const dbconfig = require('./config/database.json')
+const config = require('./config/database.json')
 const db = mongoose.connection
 const crypto = require('crypto')
 let _ALL_ACCOUNTS;  //_ALL_ACCOUNTS[0]._doc.accounts[0]._doc.currency
@@ -43,7 +43,7 @@ function getSavedUserAuth(){
 
 async function mongooseConnect(){
 return new Promise((resolve, reject)=>{
-    mongoose.connect(dbconfig.mongodbURI, {
+    mongoose.connect(config.mongodbURI, {
         useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false
     }).then(() => resolve())
         .catch(error => reject(error))
@@ -183,12 +183,6 @@ async function addAccount(accessKey, balance){
                 //avg_buy_price_modified:false,
                 //unit_currency: "KRW",
                 timestamp : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
-            },
-            {
-                currency:"BTC",
-                balance:"2.0",
-                avg_buy_price:"101000",
-                timestamp:new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
             }
         ]
         // accounts: {
@@ -223,12 +217,27 @@ async function loadAllAccountAndAuth(){
 }
 
 async function makeAccountAndAuth(accessKey, balance){
-    secretKey = crypto.createHash('sha256').update(dbconfig.hashkey + accessKey).digest('base64');
+    secretKey = crypto.createHash('sha256').update(config.hashkey + accessKey).digest('base64');
     //var secretKey = crypto.randomBytes(32).toString('hex');
     ret = await addUserAuth(accessKey, secretKey, balance);
     ret = await addAccount(accessKey, balance);
 }
 
+async function makeAllTestAccountsAndAuth(balance){
+    for(var i in config.users){
+        userKEY = "test" + config.users[i];
+        await addUserAuth(userKEY, "TEST_SECRET_KET", balance);
+        await addAccount(userKEY, balance);
+        console.log("MADE : "+ userKEY)
+    }
+}
+async function makeAllRealAccountsAndAuth(balance){
+    for(var i in config.user){
+        userKEY = config.user[i];
+        await makeAccountAndAuth(userKEY, balance)
+        console.log("MADE : "+ userKEY)
+    }
+}
 async function saveAccount(accessKey, account){
     timestamp = new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
 
@@ -265,6 +274,7 @@ async function initCreate(){
     }
     ret = await getAccount(testAccessKey)
     console.log(ret)
+    await makeAllTestAccountsAndAuth(10000000)
     //ret = await saveAccount(testAccessKey,tmpaccounts)
 }
 initCreate();

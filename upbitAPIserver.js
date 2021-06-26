@@ -100,6 +100,7 @@ app.use(bodyParser.json());
 //{"access_key":"MYACCESS_KEY","nonce":"6d90e663-6efb-4123-bcb2-436e386ff66e","iat":1623767
 //잘못된 경우 : 401 Unauthorized
 ////"{\"error\":{\"message\":\"잘못된 엑세스 키입니다.\",\"name\":\"invalid_access_key\"}}"
+
 app.get('/v1/accounts',(req,res)=>{
     let retJSON = verifyJWT(req)
     let accessKey = retJSON.accessKey
@@ -132,6 +133,7 @@ app.post('/v1/orders',(req,res)=>{
     if(retJSON.result){
        ret = order(req, accessKey)
        if(ret.result){
+        io.sockets.emit('UPDATE_LOCAL_ALL_ACCOUNTS', _LOCAL_ALL_ACCOUNTS)
         res.send(ret.message)
        } else {
         res.statusCode = 400;   
@@ -460,5 +462,18 @@ function orderbookWS(markets){
         }
     })
 }
+
+var io = require('socket.io')(server);
+
+io.on('connection', function (socket) {
+    console.log('connect');
+
+    socket.on('INIT_LOCAL_ALL_ACCOUNTS', function (data) {
+        console.log(data);
+        //io.sockets.in(roomName).emit('recMsg', _LOCAL_ALL_ACCOUNTS);
+        io.sockets.emit('INIT_LOCAL_ALL_ACCOUNTS', _LOCAL_ALL_ACCOUNTS)
+    })
+});
+
 
 init()
