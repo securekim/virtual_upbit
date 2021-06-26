@@ -18,7 +18,6 @@ let _LOCAL_ALL_ACCOUNTS;
 let _LOCAL_ALL_USERSAUTH;
 let _CHANGED_ACCESSKEY = {}
 
-
 setInterval(async ()=>{
     for(var _access_key in _CHANGED_ACCESSKEY){
       if(_CHANGED_ACCESSKEY[_access_key]){
@@ -457,6 +456,7 @@ function orderbookWS(markets){
             _MARKETS_STATUS[market].bid_volume = json.obu[0].bs;
             timeStamp = new Date(json.tms).toLocaleString();
             _MARKETS_STATUS[market].realTimeStamp = timeStamp
+            //io.sockets.emit("marketData",{cd:market, bp: json.obu[0].bp} )
         } catch (e) {
             //console.log(e)
         }
