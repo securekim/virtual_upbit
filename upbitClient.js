@@ -4,9 +4,9 @@ const sign = require('jsonwebtoken').sign
 const crypto = require('crypto')
 const queryEncode = require("querystring").encode
 
-const access_key = "TEST_ACCESSKEY"
-const secret_key = "UrNdNutMTG7Y9twM1BDUuMZAD7DL6K97AUzeuLZAuGI="
-const server_url = "http://127.0.0.1"
+const access_key = "TEST_ACCESSKEY5"
+const secret_key = "TEST_SECRET_KET"
+const server_url = "http://ubuntu.securekim.com"
 
 async function getBalance(){
     const payload = {
@@ -107,7 +107,7 @@ async function main(){
     //1.014008084593923
     //348583.84272261686
     //353695.55995306565
-    body = await API_buyImmediate("KRW-ETH", 10000000);   // 정상 구매
+    body = await API_buyImmediate("KRW-ETH", 100000);   // 정상 구매
     console.log(body);
     // body = await API_buyImmediate("KRW-BTC", 500000);   // 정상 구매
     // body = await API_sellImmediate("KRW-BTC", 1.0);     // 정상 판매

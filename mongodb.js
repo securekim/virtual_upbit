@@ -216,8 +216,10 @@ async function loadAllAccountAndAuth(){
     _ALL_USERSAUTH = ret
 }
 
-async function makeAccountAndAuth(accessKey, balance){
-    secretKey = crypto.createHash('sha256').update(config.hashkey + accessKey).digest('base64');
+async function makeAccountAndAuth(accessKey, balance, secretKey){
+    if(typeof secretKey == "undefined") {
+        secretKey = crypto.createHash('sha256').update(config.hashkey + accessKey).digest('base64');
+    }
     //var secretKey = crypto.randomBytes(32).toString('hex');
     ret = await addUserAuth(accessKey, secretKey, balance);
     ret = await addAccount(accessKey, balance);
@@ -264,17 +266,17 @@ async function init(){
 //init()
 async function initCreate(){
     init()
-    testAccessKey = "TEST_ACCESSKEY"
+    testAccessKey = "TEST_ACCESSKEY5"
     try{
-        let balance = 1000000
-        ret = await makeAccountAndAuth(testAccessKey, balance)
+        let balance = 10000000
+        ret = await makeAccountAndAuth(testAccessKey, balance, 'TEST_SECRET_KET')
         console.log(ret)
     }catch(E){
         console.log(E);
     }
     ret = await getAccount(testAccessKey)
     console.log(ret)
-    await makeAllTestAccountsAndAuth(10000000)
+    //await makeAllTestAccountsAndAuth(10000000)
     //ret = await saveAccount(testAccessKey,tmpaccounts)
 }
 initCreate();
