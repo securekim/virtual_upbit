@@ -213,13 +213,15 @@ async function makeAllTestAccountsAndAuth(balance){
         console.log("MADE : "+ userKEY)
     }
 }
+
 async function makeAllRealAccountsAndAuth(balance){
-    for(var i in config.user){
-        userKEY = config.user[i];
+    for(var i in config.users){
+        userKEY = config.users[i];
         await makeAccountAndAuth(userKEY, balance)
         console.log("MADE : "+ userKEY)
     }
 }
+
 async function saveAccount(accessKey, account){
     timestamp = new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
 
@@ -239,27 +241,31 @@ async function getAccount(accessKey){
     return result;
 }
 
+async function printAllAccountsSecret(){
+    for(var i in _ALL_USERSAUTH){
+        console.log(_ALL_USERSAUTH[i].accessKey + " : " + _ALL_USERSAUTH[i].secretKey);
+    }
+}
+
 async function init(){
     let ret = await mongooseConnect();
-    await loadAllAccountAndAuth()
+    ret = await loadAllAccountAndAuth();
+    console.log(ret);
+    await printAllAccountsSecret()
+    return ret;
 }
 //init()
 async function initCreate(){
-    init()
-    testAccessKey = "TEST_ACCESSKEY5"
-    try{
-        let balance = 10000000
-        ret = await makeAccountAndAuth(testAccessKey, balance, 'TEST_SECRET_KET')
-        console.log(ret)
-    }catch(E){
-        console.log(E);
-    }
-    ret = await getAccount(testAccessKey)
+    await init()
+    userKEY = "tunabaguette"
+    balance = 50000000
+    await makeAccountAndAuth(userKEY, balance)
+    //ret = await makeAllRealAccountsAndAuth(50000000)
     console.log(ret)
-    //await makeAllTestAccountsAndAuth(10000000)
-    //ret = await saveAccount(testAccessKey,tmpaccounts)
 }
-initCreate();
+
+
+init();
 
 module.exports = {
     init,
