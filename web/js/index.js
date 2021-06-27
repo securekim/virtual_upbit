@@ -165,7 +165,7 @@ function testWebSocket()
 }
 function onOpen(evt)
 {
-    writeToScreen("가상 거래소 및 업비트 시세 연결완료");
+    writeToScreen("업비트 시세 정보 연결 됨.");
     doSend('[{"ticket":"'+ticket+'"},{"type":"orderbook","codes":["'+_markets.join('","')+'"]},{"format":"SIMPLE"}]');
 }
 function onClose(evt)
@@ -174,7 +174,7 @@ function onClose(evt)
     setTimeout(function() {
         testWebSocket(_markets);
     }, 3000);
-    writeToScreen("연결해제"); 
+    writeToScreen("업비트 시세 연결해제"); 
 }
 
 function onMessage(evt)
@@ -236,7 +236,14 @@ socket.on('UPDATE_LOCAL_ALL_ACCOUNTS', function (data) {
         updateChart()
     });
 
-socket.on('INIT_LOCAL_ALL_ACCOUNTS', function (data) {
+socket.on('disconnect', function(){
+    writeToScreen('<span style="color: red;">'+window.location.hostname+' 서버 연결 끊김</span>');
+});
+
+socket.on('connect', function(){
+    writeToScreen(window.location.hostname + " 서버 연결 됨.");
+});
+  socket.on('INIT_LOCAL_ALL_ACCOUNTS', function (data) {
     console.log(data)
     _LOCAL_ALL_ACCOUNTS = data;
     updateUserValue()

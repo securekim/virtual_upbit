@@ -185,25 +185,6 @@ async function addAccount(accessKey, balance){
                 timestamp : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
             }
         ]
-        // accounts: {
-        //     "KRW" : {
-        //     //currency : "KRW",
-        //     balance : balance.toString(),
-        //     //locked:"0.0",
-        //     //avg_buy_price:"0",
-        //     //avg_buy_price_modified:false,
-        //     //unit_currency: "KRW",
-        //     timestamp : new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
-        //     } ,
-        //     "BTC" : {
-        //     currency:"BTC",
-        //     balance:"2.0",
-        //     //locked:"0.0",
-        //     avg_buy_price:"101000",
-        //     //avg_buy_price_modified:false,
-        //     //unit_currency:"KRW",
-        //     timestamp:new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
-        //     } 
         });
         ret = await account.save()
         return ret;
@@ -220,7 +201,6 @@ async function makeAccountAndAuth(accessKey, balance, secretKey){
     if(typeof secretKey == "undefined") {
         secretKey = crypto.createHash('sha256').update(config.hashkey + accessKey).digest('base64');
     }
-    //var secretKey = crypto.randomBytes(32).toString('hex');
     ret = await addUserAuth(accessKey, secretKey, balance);
     ret = await addAccount(accessKey, balance);
 }
