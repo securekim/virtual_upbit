@@ -1,6 +1,6 @@
 let socket = io.connect(window.location.hostname);
 
-let markets = [
+let _markets = [
 "KRW-BTC"
 ,"KRW-ETH"
 ,"KRW-NEO"
@@ -127,8 +127,8 @@ let _CHART_ALL_BALANCE = []
 
 function init()
 {
-    for(var i in markets){
-        _MARKETS_STATUS[markets[i]] = {
+    for(var i in _markets){
+        _MARKETS_STATUS[_markets[i]] = {
         "ask_price" : ""
         ,"ask_volume": ""
         ,"bid_price": ""
@@ -137,7 +137,7 @@ function init()
         ,"bid_power": ""
         ,"ask_power": ""
         }
-        _MARKETS_INVEST[markets[i]] = {
+        _MARKETS_INVEST[_markets[i]] = {
             "balance" : 0
         }
     }
@@ -149,7 +149,7 @@ function init()
     },2000)
     setInterval(()=>{
         updateChart()
-    },5000) 
+    },1000) 
 }
 function testWebSocket()
 {
@@ -162,13 +162,13 @@ function testWebSocket()
 function onOpen(evt)
 {
     writeToScreen("연결완료");
-    doSend('[{"ticket":"'+ticket+'"},{"type":"orderbook","codes":["'+markets.join('","')+'"]},{"format":"SIMPLE"}]');
+    doSend('[{"ticket":"'+ticket+'"},{"type":"orderbook","codes":["'+_markets.join('","')+'"]},{"format":"SIMPLE"}]');
 }
 function onClose(evt)
 { 
     console.log("CLOSECLOSECLOSECLOSE")
     setTimeout(function() {
-        testWebSocket(markets);
+        testWebSocket(_markets);
     }, 3000);
     writeToScreen("연결해제"); 
 }
@@ -211,7 +211,7 @@ function onError(evt)
 { writeToScreen('<span style="color: red;">에러: ' + evt.data+'</span>');}
 function doSend(message)
 {
-    writeToScreen("발신: " + message);
+    //writeToScreen("발신: " + message);
     websocket.send(message);
 }
 
@@ -264,7 +264,7 @@ function updateUserValue(){
         }
         _ACCOUNT.timeStamp = new Date().toLocaleString('en', {timeZone: "Asia/Seoul"})
         _ACCOUNT["ALL_BALANCE"] = _ALL_BALANCE;
-        writeToScreen(JSON.stringify(_LOCAL_ALL_ACCOUNTS))
+        //writeToScreen(JSON.stringify(_LOCAL_ALL_ACCOUNTS))
     }
 }
 window.addEventListener("load", init, false);

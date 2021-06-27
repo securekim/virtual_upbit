@@ -1,12 +1,12 @@
 let chart1;
 let chart2;
-const MAXWIDTH = 10
+const MAXWIDTH = 30
 
 
 let _data_obj1 = {}
 let _data_obj2 = {}
 let _users = []
-
+let _market_arr = []
 // let datas = 
 //   [{
 //     name: 'Installation',
@@ -15,6 +15,7 @@ let _users = []
 
 
 function initDatatoContainer1(data){
+  //데이터를 넣고 그래프 이닛
   _data_obj1 = data;
   console.log(_data_obj1)
   initContainer1();
@@ -41,6 +42,7 @@ function addArrDatatoSeries(objData){
 
 function initDatatoContainer2(data){
   _data_obj1 = data;
+  initContainer2();
 }
 
 function initContainer1(){
@@ -103,72 +105,55 @@ function initContainer1(){
   
 }
 
+arr = []
+for(var i=0; i<103; i++){
+  arr.push(i);
+}
+
 function initContainer2(){
+  
+  for(var i in _markets){
+    _market_arr.push(_markets[i].split("-")[1])
+  }
+  _market_arr.push("KRW")
+
   chart2 = Highcharts.chart('container2', {
     chart: {
         type: 'bar'
     },
     title: {
-        text: '유저별 투자 내역'
-    },
-    subtitle: {
-        text: 'Source: '+window.location.hostname
+        text: '코인별 투자 현황'
     },
     xAxis: {
-        categories: _users,
-        title: {
-            text: null
-        }
+        categories: _market_arr
     },
     yAxis: {
         min: 0,
         title: {
-            text: '투자금',
-            align: 'high'
-        },
-        labels: {
-            overflow: 'justify'
-        }
-    },
-    tooltip: {
-        valueSuffix: ' 원'
-    },
-    plotOptions: {
-        bar: {
-            dataLabels: {
-                enabled: true
-            }
+            text: 'Total coin consumption'
         }
     },
     legend: {
-        layout: 'vertical',
-        align: 'right',
-        verticalAlign: 'top',
-        x: -40,
-        y: 80,
-        floating: true,
-        borderWidth: 1,
-        backgroundColor:
-            Highcharts.defaultOptions.legend.backgroundColor || '#FFFFFF',
-        shadow: true
+        reversed: true
     },
-    credits: {
-        enabled: false
+    plotOptions: {
+        series: {
+            stacking: 'normal'
+        }
     },
     series: [{
-        name: 'Year 1800',
-        data: [107, 31, 635, 203, 2]
+        name: 'John',
+        data: arr
     }, {
-        name: 'Year 1900',
-        data: [133, 156, 947, 408, 6]
+        name: 'Jane',
+        data: arr
     }, {
-        name: 'Year 2000',
-        data: [814, 841, 3714, 727, 31]
-    }, {
-        name: 'Year 2016',
-        data: [1216, 1001, 4436, 738, 40]
+        name: 'Joe',
+        data: arr
     }]
-  });
+});
 }
+
+//_data_obj2 = [{name:"accessKey", data:[마켓순서대로 밸런스. 없으면 0]},]
 
 //initDatatoContainer1(datas)
