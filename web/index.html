@@ -1,12 +1,51 @@
 <!DOCTYPE html><meta charset="utf-8" />
 <title>RANKERS</title>
 <link rel="stylesheet" href="/css/index.css" type="text/css">
+<link rel="stylesheet" href="/css/loading.css" type="text/css">
 <html>
     <body>
+
+        <div class="loading" id="loading">
+            <div class="finger finger-1">
+              <div class="finger-item">
+                <span></span><i></i>
+              </div>
+            </div>
+                        <div class="finger finger-2">
+              <div class="finger-item">
+                <span></span><i></i>
+              </div>
+            </div>
+                        <div class="finger finger-3">
+              <div class="finger-item">
+                <span></span><i></i>
+              </div>
+            </div>
+                        <div class="finger finger-4">
+              <div class="finger-item">
+                <span></span><i></i>
+              </div>
+            </div>
+                        <div class="last-finger">
+              <div class="last-finger-item"><i></i></div>
+            </div>
+                  </div>
+          
+          <div class="credits-info">
+           
+          </div>
+
+
         <h2>RANKERS</h2>
         <div id="output"></div>
     </body>
 
+    <figure class="highcharts-figure">
+        <div id="container2"></div>
+        <p class="highcharts-description">
+        </p>
+    </figure>
+    
 <figure class="highcharts-figure">
     <div id="container1"></div>
     <p class="highcharts-description">
@@ -14,11 +53,6 @@
 </figure>
 
 
-<figure class="highcharts-figure">
-    <div id="container2"></div>
-    <p class="highcharts-description">
-    </p>
-</figure>
 
 
 <script src="/socket.io/socket.io.js"></script>

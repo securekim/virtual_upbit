@@ -21,12 +21,23 @@ function initDatatoContainer1(data){
   initContainer1();
 }
 
+function initDatatoContainer2(data){
+    //데이터를 넣고 그래프 이닛
+    _data_obj2 = data;
+    console.log(_data_obj2)
+    initContainer2();
+  }
+
 function addSeriestoContainer1(objData){
-  chart1.addSeries(objData);
+    chart1.addSeries(objData);
+}
+
+function addSeriestoContainer2(objData){
+    chart2.addSeries(objData);
 }
 
 //objData = [{name : "test" / data : [123]}]
-function addArrDatatoSeries(objData){
+function addArrDatatoSeries1(objData){
   //addArrDatatoSeries()
   _data_obj1 = objData
 
@@ -35,13 +46,25 @@ function addArrDatatoSeries(objData){
       _data_obj1[i].data.shift();
     }
   }
-
   chart1.update({
     series:_data_obj1});
 }
 
+function addArrDatatoSeries2(objData){
+    //addArrDatatoSeries()
+    _data_obj2 = objData
+  
+    for(let i in _data_obj2){
+      if(_data_obj2[i].data.length > MAXWIDTH){
+        _data_obj2[i].data.shift();
+      }
+    }
+    chart2.update({
+      series:_data_obj2});
+  }
+
 function initDatatoContainer2(data){
-  _data_obj1 = data;
+  _data_obj2 = data;
   initContainer2();
 }
 
@@ -105,55 +128,69 @@ function initContainer1(){
   
 }
 
-arr = []
-for(var i=0; i<103; i++){
-  arr.push(i);
-}
-
 function initContainer2(){
   
-  for(var i in _markets){
-    _market_arr.push(_markets[i].split("-")[1])
-  }
-  _market_arr.push("KRW")
+    chart2 = Highcharts.chart('container2', {
 
-  chart2 = Highcharts.chart('container2', {
-    chart: {
-        type: 'bar'
-    },
-    title: {
-        text: '코인별 투자 현황'
-    },
-    xAxis: {
-        categories: _market_arr
-    },
-    yAxis: {
-        min: 0,
         title: {
-            text: 'Total coin consumption'
+            text: "TOP 5 유저 총 잔고"
+        },
+      
+        subtitle: {
+            text: 'Source: '+window.location.hostname
+        },
+      
+        yAxis: {
+            title: {
+                text: 'Balance'
+            }
+        },
+      
+        xAxis: {
+            accessibility: {
+                rangeDescription: 'Range'
+            }
+        },
+      
+        legend: {
+            layout: 'vertical',
+            align: 'right',
+            verticalAlign: 'middle'
+        },
+      
+        plotOptions: {
+            series: {
+                label: {
+                    connectorAllowed: false
+                },
+                pointStart: 1
+            }
+        },
+      
+        series: _data_obj2,
+      
+        responsive: {
+            rules: [{
+                condition: {
+                    maxWidth: 10
+                },
+                chartOptions: {
+                    legend: {
+                        layout: 'horizontal',
+                        align: 'center',
+                        verticalAlign: 'bottom'
+                    }
+                }
+            }]
         }
-    },
-    legend: {
-        reversed: true
-    },
-    plotOptions: {
-        series: {
-            stacking: 'normal'
-        }
-    },
-    series: [{
-        name: 'John',
-        data: arr
-    }, {
-        name: 'Jane',
-        data: arr
-    }, {
-        name: 'Joe',
-        data: arr
-    }]
-});
+      
+      });
 }
 
 //_data_obj2 = [{name:"accessKey", data:[마켓순서대로 밸런스. 없으면 0]},]
 
 //initDatatoContainer1(datas)
+
+
+////////////////////
+

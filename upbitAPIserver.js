@@ -473,6 +473,11 @@ io.on('connection', function (socket) {
         //io.sockets.in(roomName).emit('recMsg', _LOCAL_ALL_ACCOUNTS);
         socket.emit('INIT_LOCAL_ALL_ACCOUNTS', _LOCAL_ALL_ACCOUNTS)
     })
+
+    socket.on('INIT_MARKETS_STATUS',(data)=>{
+      console.log(data);
+      socket.emit('INIT_MARKETS_STATUS', _MARKETS_STATUS);
+    })
 });
 
 

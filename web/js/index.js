@@ -113,17 +113,13 @@ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 });
 }
 let ticket = uuidv4()
+let MAXTOP = 5
 let _MARKETS_STATUS = {}
 let _LOCAL_ALL_ACCOUNTS = {}
 let _MARKETS_INVEST = {}
 let _RANKERS = {}
 let _CHART_ALL_BALANCE = [] 
-/*
-[{
-    name: 'Installation',
-    data: [43934, 52503, 57177, 69658, 97031, 119931, 137133, 154175]
-},
-*/
+let _CHART_TOP_BALANCE = []
 
 function init()
 {
@@ -145,12 +141,20 @@ function init()
     testWebSocket();
     //socket.emit("INIT_LOCAL_ALL_ACCOUNTS", {});
     setTimeout(()=>{
+        socket.emit("INIT_MARKETS_STATUS", {});
         socket.emit("INIT_LOCAL_ALL_ACCOUNTS", {});
-    },2000)
+        removeLoading()
+    },3000)
     setInterval(()=>{
         updateChart()
     },1000) 
 }
+
+function removeLoading() {
+    var element = document.getElementById("loading");
+    element.classList.remove("loading");
+  }
+
 function testWebSocket()
 {
     websocket = new WebSocket(wsUri);
@@ -161,7 +165,7 @@ function testWebSocket()
 }
 function onOpen(evt)
 {
-    writeToScreen("연결완료");
+    writeToScreen("가상 거래소 및 업비트 시세 연결완료");
     doSend('[{"ticket":"'+ticket+'"},{"type":"orderbook","codes":["'+_markets.join('","')+'"]},{"format":"SIMPLE"}]');
 }
 function onClose(evt)
@@ -227,7 +231,7 @@ socket.on('UPDATE_LOCAL_ALL_ACCOUNTS', function (data) {
         console.log(data)
         _LOCAL_ALL_ACCOUNTS = data;
         updateUserValue()
-        //objData = [{name : "test" / data : [123]}]
+        //objData = [{name : "test" / data : [444]}]
         //function addArrDatatoSeries(objData){
         updateChart()
     });
@@ -241,14 +245,55 @@ socket.on('INIT_LOCAL_ALL_ACCOUNTS', function (data) {
         _CHART_ALL_BALANCE.push({name:_LOCAL_ALL_ACCOUNTS[i]._id, data:[_LOCAL_ALL_ACCOUNTS[i].ALL_BALANCE]})
     }
     initDatatoContainer1(_CHART_ALL_BALANCE)
+    _CHART_TOP_BALANCE = sortWithBalance(_CHART_ALL_BALANCE.slice(0))
+    initDatatoContainer2(_CHART_TOP_BALANCE.slice(0,MAXTOP))
 });
+
+/*
+_MARKETS_STATUS[MARKETS[i]] = {
+      "ask_price" : ""
+      ,"ask_volume": ""
+      ,"bid_price": ""
+      ,"bid_volume": ""
+      ,"realTimeStamp": ""
+      ,"bid_power": ""
+      ,"ask_power": ""
+    }
+*/
+socket.on('INIT_MARKETS_STATUS', (data)=>{
+    console.log(data)
+    for(var i in data){
+        _MARKETS_STATUS[i].ask_price        = data[i].ask_price
+        _MARKETS_STATUS[i].ask_volume       = data[i].ask_volume
+        _MARKETS_STATUS[i].bid_price        = data[i].bid_price
+        _MARKETS_STATUS[i].bid_volume       = data[i].bid_volume
+        _MARKETS_STATUS[i].realTimeStamp    = data[i].realTimeStamp
+    }
+});
+
+function sortWithBalance(chart_all_balance){
+    chart_all_balance.sort(function(a, b) { // 오름차순
+        return b.data[b.data.length-1] - a.data[a.data.length-1];
+        // 13, 21, 25, 44
+    });
+    retarr = [];
+    for(var i in chart_all_balance){
+        if(chart_all_balance[i].data[chart_all_balance[i].data.length-1] != 10000000){
+            retarr.push(chart_all_balance[i])
+        }
+    }
+    //return chart_all_balance.slice(0,max-1);
+    return retarr;
+}
 
 function updateChart(){
     for(var i in _CHART_ALL_BALANCE){
         accessKey = _CHART_ALL_BALANCE[i].name;
         _CHART_ALL_BALANCE[i].data.push(_LOCAL_ALL_ACCOUNTS[accessKey].ALL_BALANCE)
     }
-    addArrDatatoSeries(_CHART_ALL_BALANCE)
+    addArrDatatoSeries1(_CHART_ALL_BALANCE)
+    _CHART_TOP_BALANCE = sortWithBalance(_CHART_ALL_BALANCE.slice(0))
+    addArrDatatoSeries2(_CHART_TOP_BALANCE.slice(0,MAXTOP))
 }
 
 function updateUserValue(){
