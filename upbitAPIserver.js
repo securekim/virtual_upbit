@@ -128,7 +128,7 @@ app.post('/v1/orders',(req,res)=>{
     res.send({error:{"message" : ret.message, "name":"Access Key가 없어요."}})
     return;
   }
-    console.log("[Server] /v1/accounts : "+accessKey)
+    console.log("[Server] /v1/orders : "+accessKey)
     if(retJSON.result){
        ret = order(req, accessKey)
        if(ret.result){

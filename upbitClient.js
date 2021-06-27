@@ -4,7 +4,7 @@ const sign = require('jsonwebtoken').sign
 const crypto = require('crypto')
 const queryEncode = require("querystring").encode
 
-const access_key = "TEST_ACCESSKEY5"
+const access_key = "testjongbeop"
 const secret_key = "TEST_SECRET_KET"
 const server_url = "http://ubuntu.securekim.com"
 
@@ -107,10 +107,11 @@ async function main(){
     //1.014008084593923
     //348583.84272261686
     //353695.55995306565
-    body = await API_buyImmediate("KRW-ETH", 100000);   // 정상 구매
+    body = await API_buyImmediate("KRW-VET", 10000);   // 정상 구매
+    //body = await API_sellImmediate("KRW-ETH", 0.04604051565377532);     // 정상 판매
+
     console.log(body);
     // body = await API_buyImmediate("KRW-BTC", 500000);   // 정상 구매
-    // body = await API_sellImmediate("KRW-BTC", 1.0);     // 정상 판매
     // body = await API_buyImmediate("KRW-BTC", -1);       // 범위 에러
     // body = await API_buyImmediate("KRW-BTC", 1);        // 최소 에러
     // body = await API_buyImmediate("KRW-BTC", 5234);     // 단위 에러..안남
