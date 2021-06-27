@@ -471,7 +471,7 @@ io.on('connection', function (socket) {
     socket.on('INIT_LOCAL_ALL_ACCOUNTS', function (data) {
         console.log(data);
         //io.sockets.in(roomName).emit('recMsg', _LOCAL_ALL_ACCOUNTS);
-        io.sockets.emit('INIT_LOCAL_ALL_ACCOUNTS', _LOCAL_ALL_ACCOUNTS)
+        socket.emit('INIT_LOCAL_ALL_ACCOUNTS', _LOCAL_ALL_ACCOUNTS)
     })
 });
 
