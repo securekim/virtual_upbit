@@ -285,7 +285,7 @@ function sortWithBalance(chart_all_balance){
     });
     retarr = [];
     for(var i in chart_all_balance){
-        if(chart_all_balance[i].data[chart_all_balance[i].data.length-1] != 10000000){
+        if(chart_all_balance[i].data[chart_all_balance[i].data.length-1] != 50000000){
             retarr.push(chart_all_balance[i])
         }
     }
